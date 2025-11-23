@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Layout,
@@ -53,7 +52,9 @@ import {
   Cpu,
   GitBranch,
   Braces,
-  RotateCcw
+  RotateCcw,
+  Calendar,
+  Trophy
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -136,14 +137,10 @@ interface TemplateConfig {
 
 interface DesignSettings {
   fontFamily: string;
-  
-  // Colors
-  accentColor: string; // Used for decorations/backgrounds if template supports
+  accentColor: string;
   titleColor: string;
   headingColor: string;
   textColor: string;
-
-  // Sizes & Spacing
   nameSize: number;
   headingSize: number;
   textSize: number;
@@ -186,10 +183,10 @@ const FONTS = [
 
 const DEFAULT_DESIGN_SETTINGS: DesignSettings = {
   fontFamily: "'Inter', sans-serif",
-  accentColor: '#3b82f6', // blue-500
-  titleColor: '#0f172a', // slate-900
-  headingColor: '#334155', // slate-700
-  textColor: '#475569', // slate-600
+  accentColor: '#3b82f6',
+  titleColor: '#0f172a',
+  headingColor: '#334155',
+  textColor: '#475569',
   nameSize: 32,
   headingSize: 14,
   textSize: 10,
@@ -208,7 +205,6 @@ const COLOR_PRESETS = [
 ];
 
 const TEMPLATES: Record<string, TemplateConfig> = {
-  // --- ICONIC ---
   iconicBoard: {
     label: "Iconic Dashboard",
     category: "Iconic",
@@ -291,8 +287,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "bg-slate-900 text-white px-3 py-1 font-black uppercase tracking-wider text-xs mr-2 mb-2 inline-block transform -rotate-2",
     defaultColors: { titleColor: '#0f172a', headingColor: '#0f172a', textColor: '#334155', accentColor: '#0f172a' }
   },
-
-  // --- CODER ---
   vsCodeDark: {
     label: "VS Code Dark",
     category: "Coder",
@@ -459,8 +453,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "border border-[#2aa198] text-[#2aa198] px-2 py-1 text-xs mr-2 mb-2 inline-block",
     defaultColors: { titleColor: '#b58900', headingColor: '#cb4b16', textColor: '#839496', accentColor: '#2aa198' }
   },
-
-  // --- MODERN ---
   modernExecutive: {
     label: "Modern Executive",
     category: "Modern",
@@ -593,8 +585,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "block mb-2 text-slate-600 text-sm border-b border-slate-200 pb-1",
     defaultColors: { titleColor: '#0f172a', headingColor: '#0f172a', textColor: '#475569', accentColor: '#64748b' }
   },
-
-  // --- PROFESSIONAL ---
   wallStreet: {
     label: "Wall Street",
     category: "Professional",
@@ -755,8 +745,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "bg-stone-200 text-stone-700 px-2 py-1 text-xs rounded mr-2 mb-2 inline-block",
     defaultColors: { titleColor: '#1c1917', headingColor: '#44403c', textColor: '#44403c', accentColor: '#44403c' }
   },
-
-  // --- CREATIVE ---
   gallery: {
     label: "Art Gallery",
     category: "Creative",
@@ -954,8 +942,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "bg-pink-50 text-pink-600 px-3 py-1 rounded-full text-xs font-bold mr-2 mb-2 inline-block",
     defaultColors: { titleColor: '#db2777', headingColor: '#ec4899', textColor: '#475569', accentColor: '#ec4899' }
   },
-
-  // --- TECHNICAL ---
   dataScience: {
     label: "Data Scientist",
     category: "Technical",
@@ -1084,8 +1070,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "text-xs text-slate-700 bg-slate-100 px-1 rounded border border-slate-200 mr-1 mb-1 inline-block",
     defaultColors: { titleColor: '#0f172a', headingColor: '#e2e8f0', textColor: '#334155', accentColor: '#e2e8f0' }
   },
-
-  // --- INDUSTRY SPECIFIC ---
   clinical: {
     label: "Clinical Care",
     category: "Industry",
@@ -1248,8 +1232,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "text-black font-bold text-xs border-b-2 border-black mr-3 mb-1 inline-block uppercase",
     defaultColors: { titleColor: '#000000', headingColor: '#e7e5e4', textColor: '#000000', accentColor: '#000000' }
   },
-
-  // --- MINIMALIST ---
   minimalist: {
     label: "Minimalist Mono",
     category: "Minimalist",
@@ -1346,8 +1328,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     skillBadge: "text-slate-600 bg-slate-100 px-1 text-xs mr-2 mb-1 inline-block",
     defaultColors: { titleColor: '#0f172a', headingColor: '#0f172a', textColor: '#475569', accentColor: '#0f172a' }
   },
-
-  // --- CLASSIC ---
   classic: {
     label: "Traditional",
     category: "Classic",
@@ -1432,25 +1412,15 @@ const TEMPLATES: Record<string, TemplateConfig> = {
   }
 };
 
-// Helper to apply dynamic theme overrides
 const applyTheme = (config: TemplateConfig, design: DesignSettings): TemplateConfig => {
   if (!design) return config;
   
-  // GOLDEN RULE: If the user is using the template's default accent color,
-  // do NOT apply the regex replacement. This ensures multi-colored templates
-  // like Bauhaus (Yellow/Blue/Red) and Brutalist (Pink/Yellow/Black) retain 
-  // their specific hardcoded color combinations unless the user explicitly 
-  // overrides them by choosing a new accent color.
   if (config.defaultColors && design.accentColor === config.defaultColors.accentColor) {
     return config;
   }
   
-  // Clone to avoid mutation
   const newConfig = { ...config };
   
-  // 1. Color Override for Tailwind Classes
-  // This only handles Tailwind replacement. 
-  // Fine-grained hex colors will be applied via inline styles in Preview component.
   if (design.accentColor) {
     const targetColor = design.accentColor;
     const colorRegex = /(text|bg|border)-(blue|indigo|purple|pink|red|orange|green|teal|sky|cyan|emerald|violet|fuchsia|rose|amber|yellow|lime|slate|gray|zinc|neutral|stone)-(\d+)/g;
@@ -1458,7 +1428,6 @@ const applyTheme = (config: TemplateConfig, design: DesignSettings): TemplateCon
     const replaceColor = (str?: string) => {
       if (!str) return undefined;
       return str.replace(colorRegex, (match, prefix, color, shade) => {
-         // Don't replace neutral grays if they are just structural, unless it's a very colorful template
          if (['slate', 'gray', 'zinc', 'neutral', 'stone', 'black', 'white'].includes(color) && parseInt(shade) > 400) {
            return match; 
          }
@@ -1574,17 +1543,34 @@ const mockSummaries = (role: string) => [
 ];
 
 const enhanceBullet = (text: string) => {
-  const buzzwords = ["Spearheaded", "Orchestrated", "Optimized", "Accelerated", "Revolutionized"];
+  const lowercaseText = text.toLowerCase();
+  
+  if (lowercaseText.includes("manage") || lowercaseText.includes("lead") || lowercaseText.includes("coordinate")) {
+    return `Orchestrated a cross-functional team of ${Math.floor(Math.random() * 10) + 5} members to drive "${text}", resulting in a ${Math.floor(Math.random() * 20) + 15}% increase in productivity.`;
+  }
+  
+  if (lowercaseText.includes("build") || lowercaseText.includes("create") || lowercaseText.includes("develop") || lowercaseText.includes("design")) {
+    return `Engineered a scalable solution for "${text}" using modern best practices, reducing latency by ${Math.floor(Math.random() * 30) + 20}% and enhancing user engagement.`;
+  }
+  
+  if (lowercaseText.includes("fix") || lowercaseText.includes("solve") || lowercaseText.includes("debug") || lowercaseText.includes("resolve")) {
+    return `Diagnosed and resolved critical issues regarding "${text}", safeguarding system integrity and preventing potential downtime estimated at $${Math.floor(Math.random() * 50) + 10}k annually.`;
+  }
+
+  if (lowercaseText.includes("improve") || lowercaseText.includes("increase") || lowercaseText.includes("optimize")) {
+    return `Spearheaded optimization initiatives for "${text}", achieving a ${Math.floor(Math.random() * 40) + 20}% improvement in key performance metrics.`;
+  }
+  
+  // Fallback with strong verbs
+  const buzzwords = ["Spearheaded", "Championed", "Optimized", "Revamped", "Accelerated", "Pioneered"];
   const randomBuzz = buzzwords[Math.floor(Math.random() * buzzwords.length)];
-  const randomMetric = Math.floor(Math.random() * 40) + 10;
-  return `${randomBuzz} initiatives related to "${text.substring(0, 15)}..." resulting in a ${randomMetric}% increase in efficiency and improved stakeholder satisfaction.`;
+  return `${randomBuzz} strategic initiatives focusing on "${text}", yielding measurable improvements in operational efficiency and stakeholder alignment.`;
 };
 
 const analyzeResume = (data: ResumeFormData): AuditResult => {
   const recs: Recommendation[] = [];
   let score = 100;
   
-  // CATEGORY 1: IMPACT & METRICS
   const hasMetrics = data.experience.some(exp => /\d+%|\$\d+/.test(exp.description));
   const weakVerbs = ["worked on", "helped", "responsible for", "handled"];
   const hasWeakVerbs = data.experience.some(exp => weakVerbs.some(v => exp.description.toLowerCase().includes(v)));
@@ -1618,7 +1604,6 @@ const analyzeResume = (data: ResumeFormData): AuditResult => {
     score -= 5;
   }
 
-  // CATEGORY 2: CONTENT QUALITY
   if (!data.summary || data.summary.length < 50) {
     recs.push({ 
       id: 'content-1', 
@@ -1640,7 +1625,6 @@ const analyzeResume = (data: ResumeFormData): AuditResult => {
     score -= 15;
   }
 
-  // CATEGORY 3: ATS COMPATIBILITY
   if (data.skills.length < 6) {
     recs.push({ 
       id: 'ats-1', 
@@ -1654,11 +1638,8 @@ const analyzeResume = (data: ResumeFormData): AuditResult => {
     recs.push({ id: 'ats-2', category: 'ats', type: 'success', message: 'Good keyword density.' });
   }
 
-  // FINAL SCORE CALC
   return { score: Math.max(0, score), recommendations: recs };
 };
-
-// --- COMMON COMPONENTS ---
 
 const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input 
@@ -1702,91 +1683,273 @@ const ColorControl = ({ label, value, onChange }: { label: string, value: string
   </div>
 );
 
-// 1. LANDING PAGE
-const LandingPage = ({ onStart }: { onStart: (withData: boolean) => void }) => (
-  <div className="min-h-screen bg-slate-950 relative overflow-hidden flex flex-col font-sans text-white">
-    <div className="absolute inset-0 z-0 opacity-[0.4] pointer-events-none" 
-       style={{ 
-         backgroundImage: `linear-gradient(#334155 1px, transparent 1px), linear-gradient(to right, #334155 1px, transparent 1px)`, 
-         backgroundSize: '40px 40px' 
-       }} 
-    />
-    <div className="relative z-10 px-6 py-6 flex justify-between items-center max-w-7xl mx-auto w-full">
-      <div className="flex items-center gap-2">
-        <div className="bg-indigo-600 p-2 rounded-lg text-white shadow-lg">
-          <Briefcase className="w-6 h-6" />
-        </div>
-        <span className="text-2xl font-bold text-white tracking-tight">Resume<span className="text-indigo-400">Architect</span></span>
-      </div>
-    </div>
-    <div className="flex-1 flex flex-col lg:flex-row items-center justify-center max-w-7xl mx-auto w-full px-6 py-12 gap-12 lg:gap-20 relative z-10">
-      <div className="lg:w-1/2 space-y-8 text-center lg:text-left">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-900/30 text-indigo-300 text-sm font-bold uppercase tracking-wider border border-indigo-800">
-          <Sparkles className="w-4 h-4" /> AI-Powered Resume Builder
-        </div>
-        <h1 className="text-5xl lg:text-7xl font-extrabold text-white leading-[1.1] tracking-tight">
-          Build Your <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">Dream Career</span>
-        </h1>
-        <p className="text-xl text-slate-400 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-          Create ATS-friendly resumes in minutes with our intelligent editor. Real-time preview, AI suggestions, and 50+ professional templates.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-          <button onClick={() => onStart(true)} className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
-            <Zap className="w-5 h-5" /> Try with Demo Data
-          </button>
-          <button onClick={() => onStart(false)} className="px-8 py-4 bg-slate-800 text-white border-2 border-slate-700 hover:border-indigo-500 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
-            <MousePointer2 className="w-5 h-5" /> Start from Scratch
-          </button>
-        </div>
-        <div className="pt-8 flex items-center justify-center lg:justify-start gap-8 text-slate-400 text-sm font-medium">
-          <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> No Sign-up Required</div>
-          <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> 100% Free</div>
-          <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> PDF Export</div>
-        </div>
-      </div>
-      <div className="lg:w-1/2 w-full max-w-[500px] perspective-1000 relative hidden lg:block">
-        <div className="absolute -top-12 -right-12 bg-slate-800 p-4 rounded-xl shadow-2xl border border-slate-700 z-20 animate-bounce duration-[3000ms]">
-           <div className="flex items-center gap-3 mb-2">
-              <div className="bg-green-900/30 p-2 rounded-full text-green-400"><CheckCircle className="w-5 h-5" /></div>
-              <div>
-                <div className="text-sm font-bold text-white">ATS Score</div>
-                <div className="text-xs text-slate-400">Excellent</div>
-              </div>
-              <div className="text-xl font-bold text-green-400 ml-2">98%</div>
-           </div>
-        </div>
-        <div className="relative bg-slate-900 rounded-lg shadow-2xl border border-slate-800 p-2 transform rotate-y-[-10deg] rotate-x-[5deg] hover:rotate-y-0 hover:rotate-x-0 transition-transform duration-500 ease-out">
-          <div className="h-[600px] bg-slate-950 rounded overflow-hidden relative">
-             <div className="h-32 bg-indigo-600 w-full"></div>
-             <div className="p-6 space-y-4">
-                <div className="h-8 w-3/4 bg-slate-700 rounded"></div>
-                <div className="h-4 w-1/2 bg-slate-700 rounded"></div>
-                <div className="flex gap-4 mt-8">
-                  <div className="w-1/3 space-y-2">
-                    <div className="h-4 w-full bg-slate-800 rounded"></div>
-                    <div className="h-4 w-full bg-slate-800 rounded"></div>
-                    <div className="h-4 w-full bg-slate-800 rounded"></div>
-                  </div>
-                  <div className="w-2/3 space-y-4">
-                    <div className="h-24 w-full bg-slate-800 rounded border border-slate-700 shadow-sm p-2 space-y-2">
-                       <div className="h-3 w-1/2 bg-slate-700 rounded"></div>
-                       <div className="h-2 w-full bg-slate-800 rounded"></div>
-                       <div className="h-2 w-full bg-slate-800 rounded"></div>
-                    </div>
-                     <div className="h-24 w-full bg-slate-800 rounded border border-slate-700 shadow-sm p-2 space-y-2">
-                       <div className="h-3 w-1/2 bg-slate-700 rounded"></div>
-                       <div className="h-2 w-full bg-slate-800 rounded"></div>
-                    </div>
-                  </div>
-                </div>
-             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+// 0. INITIAL LOADER
+const InitialLoader = () => (
+  <div className="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center text-white">
+     {/* Logo Animation */}
+     <div className="relative mb-8">
+        <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 animate-pulse"></div>
+        <Briefcase className="w-16 h-16 text-indigo-500 animate-bounce" />
+     </div>
+     <h2 className="text-2xl font-bold tracking-tight mb-2">Resume<span className="text-indigo-500">Architect</span></h2>
+     
+     {/* Progress Bar */}
+     <div className="w-64 h-1 bg-slate-800 rounded-full overflow-hidden mt-4">
+        <div className="h-full bg-indigo-500 animate-[progress_2s_ease-in-out_forwards]"></div>
+     </div>
+     <p className="text-slate-500 text-xs mt-2 font-mono animate-pulse">Initializing AI Models...</p>
+
+     <style>{`
+       @keyframes progress {
+         0% { width: 0%; }
+         50% { width: 70%; }
+         100% { width: 100%; }
+       }
+     `}</style>
   </div>
 );
+
+// 1. LANDING PAGE
+const LandingPage = ({ onStart }: { onStart: (withData: boolean) => void }) => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Calculate mouse position relative to window center for 3D tilt
+      const x = (e.clientX - window.innerWidth / 2) / 35; // Sensitivity divisor
+      const y = (e.clientY - window.innerHeight / 2) / 35;
+      setMousePos({ x: e.clientX, y: e.clientY, rotateX: -y, rotateY: x } as any);
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="min-h-screen bg-slate-950 relative overflow-hidden flex flex-col font-sans text-white selection:bg-indigo-500/30">
+        <style>{`
+          @keyframes beam-h {
+            0% { left: -100%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { left: 100%; opacity: 0; }
+          }
+          @keyframes beam-v {
+            0% { top: -100%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+          }
+          .animate-beam-h { animation: beam-h 4s linear infinite; }
+          .animate-beam-v { animation: beam-v 4s linear infinite; }
+          
+          /* Entrance animations */
+          @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fade-in-up { animation: fade-in-up 0.8s ease-out forwards; }
+          .delay-100 { animation-delay: 100ms; }
+          .delay-200 { animation-delay: 200ms; }
+          .delay-300 { animation-delay: 300ms; }
+          
+          /* Floating anims with parallax feel */
+          @keyframes float-card {
+            0%, 100% { transform: translateY(0px) translateZ(40px); }
+            50% { transform: translateY(-10px) translateZ(40px); }
+          }
+          @keyframes float-card-deep {
+            0%, 100% { transform: translateY(0px) translateZ(80px); }
+            50% { transform: translateY(-15px) translateZ(80px); }
+          }
+          .animate-float-card { animation: float-card 6s ease-in-out infinite; }
+          .animate-float-card-deep { animation: float-card-deep 8s ease-in-out infinite; }
+        `}</style>
+        
+        {/* Background Grid & Spotlight */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ 
+            backgroundImage: `
+              radial-gradient(800px circle at ${mousePos.x}px ${mousePos.y}px, rgba(79, 70, 229, 0.1), transparent 40%),
+              linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
+              linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+            `, 
+            backgroundSize: '100% 100%, 40px 40px, 40px 40px'
+          }} 
+        />
+
+        {/* Beams */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute h-[1px] w-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent top-[15%] animate-beam-h opacity-40"></div>
+          <div className="absolute h-[1px] w-full bg-gradient-to-r from-transparent via-blue-500 to-transparent top-[65%] animate-beam-h opacity-40" style={{ animationDelay: '2s', animationDuration: '6s' }}></div>
+          <div className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-purple-500 to-transparent left-[20%] animate-beam-v opacity-40" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-indigo-500 to-transparent left-[85%] animate-beam-v opacity-40" style={{ animationDelay: '3s', animationDuration: '7s' }}></div>
+        </div>
+
+        {/* Header - Simple Logo */}
+        <div className="relative z-10 px-8 py-6 max-w-7xl mx-auto w-full flex justify-between items-center">
+             <div className="flex items-center gap-2">
+                <div className="bg-indigo-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-500/20">
+                    <Briefcase className="w-5 h-5" />
+                </div>
+                <span className="text-xl font-bold tracking-tight">Resume<span className="text-indigo-400">Architect</span></span>
+            </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center max-w-7xl mx-auto w-full px-6 py-8 lg:gap-16 relative z-10">
+            
+            {/* Left Column: Text */}
+            <div className="lg:w-1/2 space-y-8 text-center lg:text-left pt-10 lg:pt-0">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/50 text-indigo-300 text-xs font-bold uppercase tracking-wider border border-indigo-500/30 backdrop-blur-sm opacity-0 animate-fade-in-up">
+                    <Sparkles className="w-3 h-3" /> AI-Powered Resume Builder
+                </div>
+                
+                <h1 className="text-5xl lg:text-7xl font-black text-white leading-[1.1] tracking-tighter opacity-0 animate-fade-in-up delay-100">
+                    Build Your <br/>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-blue-400 to-purple-400 animate-pulse">Dream Career</span>
+                </h1>
+                
+                <p className="text-lg text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed opacity-0 animate-fade-in-up delay-200">
+                    Create ATS-friendly resumes in minutes. Beat the bots with our intelligent editor, real-time preview, and 50+ designer templates.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 opacity-0 animate-fade-in-up delay-300">
+                    <button onClick={() => onStart(true)} className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_50px_rgba(79,70,229,0.6)] hover:-translate-y-1 transition-all flex items-center justify-center gap-2 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                        <Zap className="w-5 h-5 fill-current" /> Try with Demo Data
+                    </button>
+                    <button onClick={() => onStart(false)} className="px-8 py-4 bg-slate-900/50 backdrop-blur-sm text-white border border-slate-700 hover:border-indigo-500 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                        <MousePointer2 className="w-5 h-5" /> Start from Scratch
+                    </button>
+                </div>
+                
+                <div className="pt-8 flex flex-col md:flex-row items-center justify-center lg:justify-start gap-4 md:gap-8 text-slate-500 text-xs font-bold uppercase tracking-widest opacity-0 animate-fade-in-up delay-300">
+                    <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div> No Sign-up Required</div>
+                    <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div> Free (Limited Time)</div>
+                    <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div> PDF Export</div>
+                </div>
+            </div>
+
+            {/* Right Column: 3D Visualization */}
+            <div className="lg:w-1/2 w-full h-[500px] lg:h-[700px] perspective-1000 flex items-center justify-center relative hidden lg:flex">
+                {/* Glowing Orb Behind */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
+
+                {/* 3D Container */}
+                <div 
+                  className="relative w-[380px] h-[520px] transition-transform duration-200 ease-out preserve-3d"
+                  style={{ transform: `rotateX(${(mousePos as any).rotateX || 0}deg) rotateY(${(mousePos as any).rotateY || 0}deg)` }}
+                >
+                    {/* Main Resume Card */}
+                    <div className="absolute inset-0 bg-slate-950 backdrop-blur-xl border border-slate-700 rounded-lg shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden">
+                        {/* Fake Resume Content */}
+                        <div className="h-full w-full flex flex-col opacity-100">
+                           {/* Decorative Header */}
+                           <div className="h-32 bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 p-6 flex gap-4 items-end">
+                              <div className="w-20 h-20 rounded-xl bg-slate-700/50 border border-slate-600 shadow-inner"></div>
+                              <div className="space-y-2 mb-1 flex-1">
+                                  <div className="h-6 w-3/4 bg-slate-700 rounded animate-pulse"></div>
+                                  <div className="h-3 w-1/2 bg-slate-800 rounded animate-pulse"></div>
+                              </div>
+                           </div>
+                           
+                           <div className="flex flex-1">
+                              {/* Sidebar */}
+                              <div className="w-1/3 bg-slate-900/50 border-r border-slate-800 p-4 space-y-6">
+                                 <div className="space-y-2">
+                                    <div className="h-2 w-10 bg-slate-700 rounded mb-3"></div>
+                                    <div className="h-1.5 w-full bg-slate-800 rounded"></div>
+                                    <div className="h-1.5 w-full bg-slate-800 rounded"></div>
+                                    <div className="h-1.5 w-3/4 bg-slate-800 rounded"></div>
+                                 </div>
+                                 <div className="space-y-2">
+                                    <div className="h-2 w-12 bg-slate-700 rounded mb-3"></div>
+                                    <div className="flex flex-wrap gap-1">
+                                       {[1,2,3,4,5].map(i => <div key={i} className="h-4 w-8 bg-slate-800 rounded-sm"></div>)}
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              {/* Main Body */}
+                              <div className="w-2/3 p-6 space-y-6 bg-slate-950">
+                                 {[1,2,3].map(i => (
+                                    <div key={i} className="space-y-2">
+                                       <div className="flex justify-between">
+                                          <div className="h-2.5 w-1/3 bg-slate-700 rounded"></div>
+                                          <div className="h-2.5 w-10 bg-slate-800 rounded"></div>
+                                       </div>
+                                       <div className="h-1.5 w-1/4 bg-indigo-900/40 rounded mb-2"></div>
+                                       <div className="space-y-1">
+                                          <div className="h-1.5 w-full bg-slate-800/60 rounded"></div>
+                                          <div className="h-1.5 w-full bg-slate-800/60 rounded"></div>
+                                          <div className="h-1.5 w-5/6 bg-slate-800/60 rounded"></div>
+                                       </div>
+                                    </div>
+                                 ))}
+                              </div>
+                           </div>
+                        </div>
+                        
+                        {/* Glass Overlay/Sheen */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/20 pointer-events-none"></div>
+                    </div>
+
+                    {/* Floating Element 1: HIRED Badge (Significantly Smaller) */}
+                    <div 
+                      className="absolute -top-6 -right-10 bg-white p-3 rounded-lg shadow-2xl animate-float-card z-20 flex flex-col items-center justify-center transform rotate-6 border-2 border-green-500"
+                      style={{ transform: 'translateZ(50px) rotate(6deg)' }}
+                    >
+                         <div className="bg-green-100 p-1.5 rounded-full mb-1">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                         </div>
+                         <div className="text-sm font-black text-green-600 uppercase tracking-widest leading-none">HIRED!</div>
+                    </div>
+
+                    {/* Floating Element 2: Interview Invite (Deep float) */}
+                    <div 
+                      className="absolute bottom-20 -left-16 bg-white text-slate-900 p-4 rounded-xl shadow-2xl border-l-4 border-indigo-600 w-56 animate-float-card-deep z-20"
+                      style={{ animationDelay: '1s', transform: 'translateZ(90px)' }}
+                    >
+                       <div className="flex items-center gap-2 mb-2">
+                          <div className="bg-indigo-100 p-1.5 rounded text-indigo-700"><Calendar className="w-4 h-4" /></div>
+                          <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Interview Invite</span>
+                       </div>
+                       <div className="text-sm font-bold">Frontend Engineer</div>
+                       <div className="text-xs text-slate-500 mt-0.5">Google • Tomorrow, 10 AM</div>
+                    </div>
+
+                    {/* Floating Element 3: Top Candidate */}
+                    <div 
+                      className="absolute -bottom-6 -right-4 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 animate-float-card z-30"
+                      style={{ animationDelay: '2s', transform: 'translateZ(70px)' }}
+                    >
+                        <Trophy className="w-4 h-4 text-yellow-300" />
+                        <span className="text-sm font-bold">Top 5% Candidate</span>
+                    </div>
+
+                    {/* Decoration: Code Snippet */}
+                     <div 
+                      className="absolute top-20 -left-8 bg-slate-900/90 border border-slate-700 p-2 rounded-lg shadow-xl z-10 hidden xl:block animate-float-card"
+                       style={{ animationDelay: '3s', transform: 'translateZ(30px) rotate(-5deg)' }}
+                     >
+                       <div className="flex gap-1 mb-1">
+                         <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                         <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                       </div>
+                       <div className="space-y-1">
+                         <div className="h-1.5 w-16 bg-slate-700 rounded"></div>
+                         <div className="h-1.5 w-10 bg-slate-700 rounded"></div>
+                         <div className="h-1.5 w-12 bg-slate-700 rounded"></div>
+                       </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  );
+};
 
 // 2. INTERVIEW MODAL
 const InterviewModal = ({ isOpen, onClose, role }: { isOpen: boolean; onClose: () => void; role: string }) => {
@@ -1919,7 +2082,6 @@ const Editor = ({
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-colors duration-300">
-      {/* Top Bar */}
       <div className="shrink-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4 flex justify-between items-center">
         <div className="flex items-center gap-3 flex-1">
            <Layout className="w-5 h-5 text-indigo-600" />
@@ -1932,17 +2094,14 @@ const Editor = ({
         </button>
       </div>
 
-      {/* Tab Navigation */}
       <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <button onClick={() => setActiveTab('content')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'content' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}><FileText className="w-4 h-4" /> Content</button>
         <button onClick={() => setActiveTab('design')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'design' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}><Palette className="w-4 h-4" /> Design</button>
       </div>
 
-      {/* Main Scrollable Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32 space-y-8">
         {activeTab === 'content' && (
           <>
-            {/* AI Audit Section */}
             <section className="bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl shadow-sm overflow-hidden">
               <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 flex justify-between items-center border-b border-indigo-100 dark:border-indigo-900/50">
                 <h2 className="text-sm font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Resume Audit</h2>
@@ -2060,7 +2219,6 @@ const Editor = ({
 
         {activeTab === 'design' && (
           <>
-            {/* Typography Controls */}
             <section className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
                <div className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-wider">
                  <Type className="w-4 h-4" /> Typography
@@ -2080,7 +2238,6 @@ const Editor = ({
                </div>
             </section>
 
-            {/* Spacing & Sizing */}
             <section className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
                <div className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-wider">
                  <Sliders className="w-4 h-4" /> Spacing & Size
@@ -2122,25 +2279,22 @@ const Editor = ({
                </div>
             </section>
 
-            {/* Colors */}
             <section className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
                <div className="flex items-center justify-between">
                  <div className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-wider">
                    <PaintBucket className="w-4 h-4" /> Colors
                  </div>
                  <button 
-                   onClick={() => setDesignSettings(prev => ({ ...prev, ...DEFAULT_DESIGN_SETTINGS, fontFamily: prev.fontFamily }))} // keep font, reset colors/spacing
+                   onClick={() => setDesignSettings(prev => ({ ...prev, ...DEFAULT_DESIGN_SETTINGS, fontFamily: prev.fontFamily }))}
                    className="text-xs flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline"
                  >
                    <RotateCcw className="w-3 h-3" /> Reset All
                  </button>
                </div>
 
-               {/* Presets Grid */}
                <div>
                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-3">Color Presets</label>
                  <div className="grid grid-cols-4 gap-2 mb-6">
-                   {/* Template Default Button */}
                     <button
                       onClick={() => setDesignSettings({...designSettings, ...currentTemplateDefaults})}
                       className="flex flex-col gap-1.5 p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-500 transition-all group bg-slate-50 dark:bg-slate-900/50"
@@ -2197,7 +2351,6 @@ const Editor = ({
                </div>
             </section>
 
-            {/* Template Gallery */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Palette className="w-4 h-4" /> Template Gallery</h2>
@@ -2259,7 +2412,6 @@ const Preview = ({ data, templateKey, designSettings }: { data: ResumeFormData, 
   const rawStyles = TEMPLATES[templateKey];
   const styles = useMemo(() => applyTheme(rawStyles, designSettings), [rawStyles, designSettings]);
   
-  // Dynamic Inline Styles based on Design Settings
   const globalStyle = {
     fontFamily: designSettings.fontFamily,
     color: designSettings.textColor,
@@ -2425,17 +2577,21 @@ const Preview = ({ data, templateKey, designSettings }: { data: ResumeFormData, 
 
 // 5. MAIN APP
 const App = () => {
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'home' | 'app'>('home');
   const [formData, setFormData] = useState<ResumeFormData>(INITIAL_STATE);
   const [activeTemplate, setActiveTemplate] = useState<TemplateKey>('modernExecutive');
   const [resumeTitle, setResumeTitle] = useState("My Professional Resume");
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
-  
-  // Initialize with meaningful defaults that look good
   const [designSettings, setDesignSettings] = useState<DesignSettings>(DEFAULT_DESIGN_SETTINGS);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
+    // Simulate initial loading
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+    return () => clearTimeout(timer);
   }, []);
 
   const handlePrint = () => {
@@ -2453,7 +2609,6 @@ const App = () => {
   
   const handleTemplateChange = (key: TemplateKey) => {
     setActiveTemplate(key);
-    // Automatically apply the template's default color scheme
     if (TEMPLATES[key]?.defaultColors) {
       setDesignSettings(prev => ({
         ...prev,
@@ -2461,6 +2616,10 @@ const App = () => {
       }));
     }
   };
+
+  if (loading) {
+    return <InitialLoader />;
+  }
 
   if (view === 'home') {
     return (<LandingPage onStart={handleStart} />);
